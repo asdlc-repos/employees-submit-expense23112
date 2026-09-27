@@ -7,21 +7,63 @@
   "appPath": "expense-api",
   "entrypoint": "deployment/service",
   "exposure": "internet",
+  "stories": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "description": "The single service that owns expense claims end to end, fully self-contained in this build: drafts and lines, receipt uploads, the manager and finance review gates, and the payroll export file. It stores claims and their history in its own PostgreSQL cluster, serves receipt images from its own storage, keeps its own seeded people records standing in for the company directory — so approvals route to the recorded manager — and writes its own notification records standing in for email delivery, instead of calling any external directory, email or storage provider. It does not implement sign-in (Thunder does), does not pay reimbursements (payroll does), and enforces no automated policy limits — reviewers judge claims manually.",
   "dependencies": [
     {
       "kind": "platform-resource",
       "name": "expense-db",
+      "description": "Dedicated PostgreSQL cluster storing claims, expense lines, receipt metadata, people records, review comments, notifications and export records.",
       "resourceType": "postgres-cnpg",
-      "description": "Dedicated PostgreSQL cluster storing claims, expense lines, receipt metadata, people records, review comments, notifications and export records."
+      "wiring": {
+        "ref": "employees-submit-5f73e4f1",
+        "envBindings": {
+          "dbname": "EXPENSE_DB_DBNAME",
+          "host": "EXPENSE_DB_HOST",
+          "password": "EXPENSE_DB_PASSWORD",
+          "port": "EXPENSE_DB_PORT",
+          "user": "EXPENSE_DB_USER"
+        }
+      }
     },
     {
       "kind": "platform-resource",
       "name": "expense-auth",
+      "description": "Thunder sign-in client protecting this API; the gateway validates tokens and forwards the signed caller assertion.",
       "resourceType": "thunder-app",
-      "description": "Thunder sign-in client protecting this API; the gateway validates tokens and forwards the signed caller assertion."
+      "wiring": {
+        "ref": "employees-submit-8a8cbd41",
+        "envBindings": {
+          "client_id": "EXPENSE_AUTH_CLIENT_ID",
+          "issuer": "EXPENSE_AUTH_ISSUER",
+          "jwks_url": "EXPENSE_AUTH_JWKS_URL",
+          "resource": "EXPENSE_AUTH_RESOURCE",
+          "scopes": "EXPENSE_AUTH_SCOPES"
+        }
+      }
     }
   ],
-  "description": "The single service that owns expense claims end to end, fully self-contained in this build: drafts and lines, receipt uploads, the manager and finance review gates, and the payroll export file. It stores claims and their history in its own PostgreSQL cluster, serves receipt images from its own storage, keeps its own seeded people records standing in for the company directory — so approvals route to the recorded manager — and writes its own notification records standing in for email delivery, instead of calling any external directory, email or storage provider. It does not implement sign-in (Thunder does), does not pay reimbursements (payroll does), and enforces no automated policy limits — reviewers judge claims manually.",
-  "stories": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-  "skillsPinned": ["openapi-conventions", "ballerina", "thunder-authentication", "api-management"]
+  "exposesAPI": {
+    "auth": "end-user-required"
+  },
+  "skillsPinned": [
+    "openapi-conventions",
+    "ballerina",
+    "thunder-authentication",
+    "api-management"
+  ]
 }

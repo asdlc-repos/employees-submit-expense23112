@@ -7,20 +7,59 @@
   "appPath": "expense-webapp",
   "entrypoint": "deployment/web-application",
   "exposure": "internet",
+  "stories": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "description": "The browser app every employee, manager and finance reviewer uses: draft and submit claims with receipt images, work the manager approval queue, work the finance review queue, and download the payroll export file. A React single-page app that calls the Expense API with the signed-in user's token; each screen gates on the operation it loads and the three roles see different queues and actions. It owns no data of its own, renders no sign-in form (Thunder hosts it), and talks only to the Expense API.",
   "dependencies": [
     {
       "kind": "component",
       "name": "expense-api",
-      "description": "The API every screen loads: drafts, submissions, approval queues, finance review and the payroll export download."
+      "description": "The API every screen loads: drafts, submissions, approval queues, finance review and the payroll export download.",
+      "wiring": {
+        "endpoint": {
+          "component": "employees-submit-expense23112-expense-api",
+          "name": "http",
+          "visibility": "project",
+          "envBindings": {
+            "address": "EXPENSE_API_URL"
+          }
+        }
+      }
     },
     {
       "kind": "platform-resource",
       "name": "expense-auth",
+      "description": "Thunder sign-in client the SPA redirects to; returns the signed-in user with their role groups for screen gating.",
       "resourceType": "thunder-app",
-      "description": "Thunder sign-in client the SPA redirects to; returns the signed-in user with their role groups for screen gating."
+      "wiring": {
+        "ref": "employees-submit-8a8cbd41",
+        "envBindings": {
+          "client_id": "EXPENSE_AUTH_CLIENT_ID",
+          "issuer": "EXPENSE_AUTH_ISSUER",
+          "jwks_url": "EXPENSE_AUTH_JWKS_URL",
+          "resource": "EXPENSE_AUTH_RESOURCE",
+          "scopes": "EXPENSE_AUTH_SCOPES"
+        }
+      }
     }
   ],
-  "description": "The browser app every employee, manager and finance reviewer uses: draft and submit claims with receipt images, work the manager approval queue, work the finance review queue, and download the payroll export file. A React single-page app that calls the Expense API with the signed-in user's token; each screen gates on the operation it loads and the three roles see different queues and actions. It owns no data of its own, renders no sign-in form (Thunder hosts it), and talks only to the Expense API.",
-  "stories": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-  "skillsPinned": ["wireframes", "react-webapp", "oxygen-ui-design-system", "thunder-authentication"]
+  "skillsPinned": [
+    "wireframes",
+    "react-webapp",
+    "oxygen-ui-design-system",
+    "thunder-authentication"
+  ]
 }
