@@ -1,8 +1,8 @@
-// Expense Claims — three roles, eleven screens, desktop
+// Expense Claims — three roles, twelve screens, desktop
 
 screen MyClaims "An employee tracks the status of every claim they have filed"
   navbar "Expense Claims"
-  sidebar "My Claims -> MyClaims | Settings"
+  sidebar "My Claims -> MyClaims | Notifications -> Notifications | Settings"
   row
     heading "My Claims"
     right
@@ -16,7 +16,7 @@ screen MyClaims "An employee tracks the status of every claim they have filed"
 
 screen NewClaim "An employee builds a new claim from expense lines with receipts"
   navbar "Expense Claims"
-  sidebar "My Claims -> MyClaims | Settings"
+  sidebar "My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "My Claims / New claim"
   heading "New Claim"
   input "Claim title — e.g. Client workshop in Leeds"
@@ -42,7 +42,7 @@ screen NewClaim "An employee builds a new claim from expense lines with receipts
 
 screen MyClaimDetail "An employee follows one claim's review journey and corrects it when returned"
   navbar "Expense Claims"
-  sidebar "My Claims -> MyClaims | Settings"
+  sidebar "My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "My Claims / Client workshop in Leeds"
   row
     heading "Client workshop in Leeds"
@@ -66,7 +66,7 @@ screen MyClaimDetail "An employee follows one claim's review journey and correct
 
 screen EditClaim "An employee corrects a returned claim and sends it back for review"
   navbar "Expense Claims"
-  sidebar "My Claims -> MyClaims | Settings"
+  sidebar "My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "My Claims / Client workshop in Leeds / Edit"
   row
     heading "Correct returned claim"
@@ -84,7 +84,7 @@ screen EditClaim "An employee corrects a returned claim and sends it back for re
 
 screen ManagerQueue "A manager reviews the claims their direct reports have submitted"
   navbar "Expense Claims"
-  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Settings"
+  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   row
     heading "Team Claims"
     right
@@ -104,7 +104,7 @@ screen ManagerQueue "A manager reviews the claims their direct reports have subm
 
 screen ManagerClaimDetail "A manager checks one claim's lines and receipts, then approves or returns it"
   navbar "Expense Claims"
-  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Settings"
+  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "Team Claims / Maya Patel / Client workshop in Leeds"
   row
     heading "Client workshop in Leeds"
@@ -126,7 +126,7 @@ screen ManagerClaimDetail "A manager checks one claim's lines and receipts, then
 
 screen ManagerReturnClaim "A manager sends a claim back with a comment for correction"
   navbar "Expense Claims"
-  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Settings"
+  sidebar "Team Claims -> ManagerQueue | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "Team Claims / Maya Patel / Return"
   heading "Return claim for correction"
   text "Client workshop in Leeds — Maya Patel — 214.60 total"
@@ -138,7 +138,7 @@ screen ManagerReturnClaim "A manager sends a claim back with a comment for corre
 
 screen FinanceQueue "A finance reviewer checks manager-approved claims before export"
   navbar "Expense Claims"
-  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Settings"
+  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   row
     heading "Finance Review"
     right
@@ -159,7 +159,7 @@ screen FinanceQueue "A finance reviewer checks manager-approved claims before ex
 
 screen FinanceClaimDetail "A finance reviewer checks a claim against policy and readies it for export"
   navbar "Expense Claims"
-  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Settings"
+  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "Finance Review / Maya Patel / Client workshop in Leeds"
   row
     heading "Client workshop in Leeds"
@@ -182,7 +182,7 @@ screen FinanceClaimDetail "A finance reviewer checks a claim against policy and 
 
 screen FinanceReturnClaim "A finance reviewer sends a claim back with a comment for correction"
   navbar "Expense Claims"
-  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Settings"
+  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "Finance Review / Maya Patel / Return"
   heading "Return claim for correction"
   text "Client workshop in Leeds — Maya Patel — 214.60 total"
@@ -194,18 +194,29 @@ screen FinanceReturnClaim "A finance reviewer sends a claim back with a comment 
 
 screen FinanceExports "A finance reviewer downloads the payroll file and audits past exports"
   navbar "Expense Claims"
-  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Settings"
+  sidebar "Finance Queue -> FinanceQueue | Exports -> FinanceExports | My Claims -> MyClaims | Notifications -> Notifications | Settings"
   breadcrumb "Finance Review / Exports"
   row
     heading "Payroll Exports"
     right
     button "Download payroll file" primary  // in place — downloads every approved claim not yet exported
-  text "The file holds every approved claim that has not been exported yet. Downloading marks each included claim exported with the date, and every affected employee is emailed."
+  text "The file holds every approved claim that has not been exported yet. Downloading marks each included claim exported with the date, and every affected employee is notified."
   heading "Past exports"
   table "Exported | Claims | Total | File"
     row "30 Sep 2026 | 46 | 3842.10 | CSV"
     row "15 Sep 2026 | 38 | 2954.75 | CSV"
   text "Each row's file can be downloaded again — check the exported date on a claim before re-loading a file, so nothing is reimbursed twice."
+
+screen Notifications "The notices the app records for the signed-in person, standing in for email"
+  navbar "Expense Claims"
+  sidebar "My Claims -> MyClaims | Notifications -> Notifications | Settings"
+  heading "Notifications"
+  tabs "All | Claim activity | Exports"
+  table "Notice | Claim | When"
+    row "Claim awaiting your approval | Maya Patel filed 'Client workshop in Leeds' | 20 Sep"
+    row "Claim approved | 'Client workshop in Leeds' now awaits finance review | 21 Sep"
+    row "Claim returned | 'Client workshop in Leeds' was returned with a comment | 21 Sep"
+    row "Claim exported | 'Client workshop in Leeds' was sent to payroll | 30 Sep"
 
 flow "Submit a claim"
   role "Employee"
@@ -214,6 +225,7 @@ flow "Submit a claim"
   NewClaim
   MyClaimDetail
   EditClaim
+  Notifications
 
 flow "Approve team claims"
   role "Manager"

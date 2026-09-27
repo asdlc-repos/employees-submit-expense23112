@@ -239,13 +239,13 @@ paths:
     get:
       tags: [Claims]
       operationId: listMyNotifications
-      summary: The mock email notices recorded for the caller
+      summary: The notifications recorded for the caller
       parameters:
         - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
         - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
       responses:
         '200':
-          description: The caller's recorded email notices, newest first.
+          description: The caller's notifications, newest first.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/NotificationPage' }
@@ -358,7 +358,7 @@ paths:
         - { name: claimId, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: The claim now stands awaiting the claimant's manager, who is emailed.
+          description: The claim now stands awaiting the claimant's manager, who is notified.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ExpenseClaim' }
@@ -546,7 +546,7 @@ paths:
             schema: { $ref: '#/components/schemas/ReviewApproval' }
       responses:
         '200':
-          description: The claim now stands awaiting finance review, and the claimant is emailed.
+          description: The claim now stands awaiting finance review, and the claimant is notified.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ExpenseClaim' }
@@ -570,7 +570,7 @@ paths:
             schema: { $ref: '#/components/schemas/ReviewDecision' }
       responses:
         '200':
-          description: The claim now stands returned to its claimant, who is emailed with the comment.
+          description: The claim now stands returned to its claimant, who is notified with the comment.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ExpenseClaim' }
@@ -633,7 +633,7 @@ paths:
             schema: { $ref: '#/components/schemas/ReviewApproval' }
       responses:
         '200':
-          description: The claim now stands ready for export, and the claimant is emailed.
+          description: The claim now stands ready for export, and the claimant is notified.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ExpenseClaim' }
@@ -657,7 +657,7 @@ paths:
             schema: { $ref: '#/components/schemas/ReviewDecision' }
       responses:
         '200':
-          description: The claim now stands returned to its claimant, who is emailed with the comment.
+          description: The claim now stands returned to its claimant, who is notified with the comment.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ExpenseClaim' }
