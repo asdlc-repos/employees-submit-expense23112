@@ -38,11 +38,11 @@ An internal expense-claims application. An employee signs in with company single
 - Finance gate: after the manager approves, a finance team member reviews the claim and either returns it for correction or approves it for export; this is the second and final gate before payment.
 - Payroll export: finance downloads a file containing all approved, not-yet-exported claims and loads it into the payroll system themselves — the app integrates with no payroll system.
 - Claim structure: a claim is a bundle of expense lines, each with a date, category, amount and description, submitted and approved as one unit.
-- Receipts: a receipt image is required for every expense line. *assumed*
+- Receipts: a receipt image is required for every expense line.
 - Categories: expense lines are categorized from a fixed list maintained by finance (for example travel, meals, supplies, training, other). *assumed*
-- Currencies: every amount is entered in the payroll currency. *assumed*
-- Approval levels: a single manager approval covers claims of any amount. *assumed*
-- Export timing: finance may export at any time; an export contains everything approved since the previous export. *assumed*
+- Currencies: every amount is entered in the payroll currency.
+- Approval levels: a single manager approval covers claims of any amount.
+- Export timing: finance may export at any time; an export contains everything approved since the previous export.
 - Editability: an employee can edit a claim until it is submitted; after that it changes only through the return-and-resubmit cycle. *assumed*
 
 ## Out of Scope
