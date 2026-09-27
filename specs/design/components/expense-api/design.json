@@ -12,31 +12,16 @@
       "kind": "platform-resource",
       "name": "expense-db",
       "resourceType": "postgres-cnpg",
-      "description": "Dedicated PostgreSQL cluster storing claims, expense lines, receipt metadata, review comments and export records."
+      "description": "Dedicated PostgreSQL cluster storing claims, expense lines, receipt metadata, people records, review comments, notifications and export records."
     },
     {
       "kind": "platform-resource",
       "name": "expense-auth",
       "resourceType": "thunder-app",
       "description": "Thunder sign-in client protecting this API; the gateway validates tokens and forwards the signed caller assertion."
-    },
-    {
-      "kind": "external",
-      "name": "directory-service",
-      "description": "Resolves the signed-in employee's directory record by username and looks up their manager, so submitted claims route to the right approver and manager queues scope to direct reports."
-    },
-    {
-      "kind": "external",
-      "name": "email-service",
-      "description": "Sends the claim notification emails: submission alerts to managers, and approval, return and export notices to employees."
-    },
-    {
-      "kind": "external",
-      "name": "object-storage-service",
-      "description": "Stores receipt image objects on upload and issues the short-lived presigned view URLs returned with claim details."
     }
   ],
-  "description": "The single service that owns expense claims end to end: drafts and lines, receipt uploads, the manager and finance review gates, and the payroll export file. Exposes the REST API the web app calls, stores claims and their history in its own PostgreSQL cluster, keeps receipt bytes in S3, resolves people and managers through the company directory, and sends every notification through the email service. It does not implement sign-in (Thunder does), does not pay reimbursements (payroll does), and enforces no automated policy limits — reviewers judge claims manually.",
+  "description": "The single service that owns expense claims end to end, fully self-contained in this build: drafts and lines, receipt uploads, the manager and finance review gates, and the payroll export file. It stores claims and their history in its own PostgreSQL cluster, serves receipt images from its own storage, keeps its own seeded people records standing in for the company directory — so approvals route to the recorded manager — and writes its own notification records standing in for email delivery, instead of calling any external directory, email or storage provider. It does not implement sign-in (Thunder does), does not pay reimbursements (payroll does), and enforces no automated policy limits — reviewers judge claims manually.",
   "stories": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
   "skillsPinned": ["openapi-conventions", "ballerina", "thunder-authentication", "api-management"]
 }

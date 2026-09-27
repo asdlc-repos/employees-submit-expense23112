@@ -7,7 +7,6 @@ sequenceDiagram
     actor Manager
     participant expense-webapp
     participant expense-api
-    participant email as "Email Service"
 
     Manager->>expense-webapp: open the approval queue
     expense-webapp->>expense-api: list claims of my direct reports
@@ -16,10 +15,10 @@ sequenceDiagram
     expense-webapp->>expense-api: approve or return the claim
     alt approve
         expense-api->>expense-api: set status awaiting-finance
-        expense-api->>email: send approval email to the employee
+        expense-api->>expense-api: record the employee's approval notice
     else return with a comment
         expense-api->>expense-api: set status returned and store the comment
-        expense-api->>email: send return email to the employee
+        expense-api->>expense-api: record the employee's return notice
     end
     expense-api-->>expense-webapp: decision recorded
 ```

@@ -6,7 +6,7 @@ Employees today reclaim out-of-pocket expenses by emailing spreadsheets and phot
 
 ## Solution
 
-An internal expense-claims application. An employee signs in with company single sign-on, builds a claim from dated, categorized expense lines with receipt images, and submits it when it is ready. The claim routes automatically to the employee's manager as recorded in the company directory; once approved it joins a finance review queue, where a finance team member checks it against policy and either returns it with a comment or approves it for export. Finance downloads a file of approved claims and loads it into the payroll system themselves. Everyone sees claim status in one place, and every step notifies by email.
+An internal expense-claims application. An employee signs in with company single sign-on, builds a claim from dated, categorized expense lines with receipt images, and submits it when it is ready. The claim routes automatically to the employee's manager as recorded in the app's own people data; once approved it joins a finance review queue, where a finance team member checks it against policy and either returns it with a comment or approves it for export. Finance downloads a file of approved claims and loads it into the payroll system themselves. Everyone sees claim status in one place, and every step notifies by email.
 
 ## Actors
 
@@ -33,8 +33,8 @@ An internal expense-claims application. An employee signs in with company single
 ## Product Decisions
 
 - Sign-in: staff sign in with the company's single sign-on through Thunder, the platform IDP.
-- People and approvals: the company directory is the system of record for employees, teams and managers — a submitted claim routes automatically to the submitter's manager, and no approver is ever picked by hand.
-- Notifications: email only, sent through the organization's existing notification service.
+- People and approvals: the app holds its own records of people and their managers, seeded with sample data in this build — a submitted claim routes automatically to the submitter's manager as recorded there, and no approver is ever picked by hand.
+- Notifications: email only, generated and recorded by the app itself — mock delivery in this build, with no external email provider.
 - Finance gate: after the manager approves, a finance team member reviews the claim and either returns it for correction or approves it for export; this is the second and final gate before payment.
 - Payroll export: finance downloads a file containing all approved, not-yet-exported claims and loads it into the payroll system themselves — the app integrates with no payroll system.
 - Claim structure: a claim is a bundle of expense lines, each with a date, category, amount and description, submitted and approved as one unit.
@@ -48,6 +48,7 @@ An internal expense-claims application. An employee signs in with company single
 ## Out of Scope
 
 - Integration with any payroll system — export is a file finance downloads and loads themselves.
+- External provider integrations — the company directory, email delivery and receipt storage run inside the app as mocks in this build; connecting real providers is a later change.
 - Automated policy enforcement — per-category limits, duplicate detection and tax/VAT handling are not built; approvers and finance judge claims manually.
 - Multi-currency conversion.
 - Corporate-card feeds and automatic statement import.

@@ -132,12 +132,34 @@ components:
         fileSize: { type: integer, description: Size of the receipt file in bytes }
         content: { type: string, format: byte, description: Base64-encoded receipt image bytes }
 
-    ReceiptView:
+    Person:
       type: object
-      required: [receiptId, viewUrl]
+      required: [username, displayName, email]
       properties:
-        receiptId: { type: string, description: Identifier of the receipt upload }
-        viewUrl: { type: string, description: Short-lived presigned URL that displays the receipt image }
+        username: { type: string, description: Username key of the person in the app's people records }
+        displayName: { type: string, description: Full name of the person }
+        email: { type: string, description: Email address of the person }
+        manager: { type: string, nullable: true, description: Username of the person's manager, absent at the top of the chain }
+
+    Notification:
+      type: object
+      required: [notificationId, recipient, subject, body, sentAt]
+      properties:
+        notificationId: { type: string, description: Identifier of the notice }
+        recipient: { type: string, description: Username the notice was recorded for }
+        subject: { type: string, description: Subject line of the notice }
+        body: { type: string, description: Body text of the notice }
+        claimId: { type: string, description: The claim the notice is about, when it is about one }
+        sentAt: { type: string, format: date-time, description: When the notice was recorded }
+
+    NotificationPage:
+      type: object
+      required: [count, data]
+      properties:
+        count: { type: integer, description: total matching items }
+        next: { type: string, nullable: true, description: relative URI of the next page }
+        previous: { type: string, nullable: true, description: relative URI of the previous page }
+        data: { type: array, items: { $ref: '#/components/schemas/Notification' } }
 
     ReviewDecision:
       type: object
@@ -197,6 +219,37 @@ paths:
               schema:
                 type: array
                 items: { type: string }
+
+  /people:
+    get:
+      tags: [Claims]
+      operationId: listPeople
+      summary: The people the app holds, with their managers
+      responses:
+        '200':
+          description: The app's own people records, seeded sample data standing in for the company directory.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Person' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/notifications:
+    get:
+      tags: [Claims]
+      operationId: listMyNotifications
+      summary: The mock email notices recorded for the caller
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
+        - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
+      responses:
+        '200':
+          description: The caller's recorded email notices, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPage' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /me/claims:
     get:
@@ -407,7 +460,7 @@ paths:
     get:
       tags: [Claims]
       operationId: viewMyClaimLineReceipt
-      summary: A short-lived URL that displays the receipt on one of the caller's lines
+      summary: The receipt image on one of the caller's lines, served from the API's own storage
       security:
         - oauth2: [claims:read]
       parameters:
@@ -415,10 +468,10 @@ paths:
         - { name: lineId, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: A presigned URL that displays the receipt image.
+          description: The receipt image bytes as uploaded.
           content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ReceiptView' }
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: No such receipt of the caller's., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -463,17 +516,17 @@ paths:
     get:
       tags: [Review]
       operationId: viewReportClaimReceipt
-      summary: A short-lived URL that displays a receipt on a report's claim
+      summary: The receipt image on a report's claim, served from the API's own storage
       security:
         - oauth2: [claims:review]
       parameters:
         - { name: receiptId, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: A presigned URL that displays the receipt image.
+          description: The receipt image bytes as uploaded.
           content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ReceiptView' }
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: No such receipt on a claim of the caller's reports., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -617,17 +670,17 @@ paths:
     get:
       tags: [Review]
       operationId: viewQueueClaimReceipt
-      summary: A short-lived URL that displays any claim's receipt to a reviewer
+      summary: Any claim's receipt image, served from the API's own storage
       security:
         - oauth2: [claims:review-all]
       parameters:
         - { name: receiptId, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: A presigned URL that displays the receipt image.
+          description: The receipt image bytes as uploaded.
           content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ReceiptView' }
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: No such receipt., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 

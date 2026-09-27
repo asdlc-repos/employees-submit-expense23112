@@ -1,6 +1,0 @@
-{
-  "packages": {
-    "ballerina": "ballerina:ballerinax/aws.s3",
-    "typescript": "npm:@aws-sdk/client-s3"
-  }
-}
