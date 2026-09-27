@@ -1,0 +1,27 @@
+apiVersion: openchoreo.dev/v1alpha1
+metadata:
+  name: expense-webapp
+
+endpoints:
+  - name: http
+    type: HTTP
+    port: 9090
+    visibility:
+      - project
+      - external
+
+dependencies:
+  endpoints:
+    - component: employees-submit-expense23112-expense-api
+      name: http
+      visibility: project
+      envBindings:
+        address: EXPENSE_API_URL
+  resources:
+    - ref: employees-submit-8a8cbd41
+      envBindings:
+        client_id: EXPENSE_AUTH_CLIENT_ID
+        issuer: EXPENSE_AUTH_ISSUER
+        jwks_url: EXPENSE_AUTH_JWKS_URL
+        resource: EXPENSE_AUTH_RESOURCE
+        scopes: EXPENSE_AUTH_SCOPES
