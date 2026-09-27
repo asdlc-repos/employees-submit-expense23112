@@ -1,0 +1,646 @@
+openapi: 3.0.3
+info:
+  title: Expense API
+  version: 1.0.0
+  description: Claims, review gates and the payroll export for the Expense Claims app.
+servers:
+  - url: /
+tags:
+  - name: Claims
+  - name: Review
+  - name: Export
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            claims:read: See the caller's own claims
+            claims:write: Create and edit the caller's own claims
+            claims:submit: Submit the caller's own claim for approval
+            claims:review: See the claims of the caller's direct reports
+            claims:approve: Approve or return a submitted claim awaiting the caller
+            claims:review-all: See every manager-approved claim in the finance queue
+            claims:export: Approve claims for export, download the payroll file and see export history
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer, description: HTTP or application error code }
+        message: { type: string, description: short human-readable label }
+        description: { type: string, description: detailed explanation }
+        moreInfo: { type: string, description: URI to documentation }
+
+    ClaimStatus:
+      type: string
+      description: Where a claim stands in its journey
+      enum: [draft, awaiting-manager, awaiting-finance, ready-for-export, returned, exported]
+
+    ExpenseLine:
+      type: object
+      required: [lineId, expenseDate, category, amount, description]
+      properties:
+        lineId: { type: string, description: Identifier of this expense line }
+        expenseDate: { type: string, format: date, description: Date the expense was incurred }
+        category: { type: string, description: Finance-maintained category, e.g. travel, meals, supplies, training, other }
+        amount: { type: number, format: double, description: Amount in the payroll currency }
+        description: { type: string, description: What the expense was for }
+        receipt:
+          allOf:
+            - $ref: '#/components/schemas/Receipt'
+          description: The receipt image backing this line, present once uploaded
+
+    Receipt:
+      type: object
+      required: [receiptId, fileName, contentType, fileSize]
+      properties:
+        receiptId: { type: string, description: Identifier of the receipt upload }
+        fileName: { type: string, description: Original file name of the uploaded receipt }
+        contentType: { type: string, description: Content type of the receipt image }
+        fileSize: { type: integer, description: Size of the receipt file in bytes }
+
+    ReviewComment:
+      type: object
+      required: [commentId, author, stage, body, createdAt]
+      properties:
+        commentId: { type: string, description: Identifier of the comment }
+        author: { type: string, description: Username of the manager or finance reviewer who wrote it }
+        stage: { type: string, description: Review stage the comment was made at, manager or finance }
+        body: { type: string, description: The comment text }
+        createdAt: { type: string, format: date-time, description: When the comment was written }
+
+    ExpenseClaim:
+      type: object
+      required: [claimId, title, claimant, status, totalAmount, lines, createdAt, updatedAt]
+      properties:
+        claimId: { type: string, description: Identifier of the claim }
+        title: { type: string, description: Short title the claimant gave the claim }
+        claimant: { type: string, description: Username of the employee who filed the claim }
+        status: { $ref: '#/components/schemas/ClaimStatus' }
+        totalAmount: { type: number, format: double, description: Sum of the line amounts, in the payroll currency }
+        lines: { type: array, items: { $ref: '#/components/schemas/ExpenseLine' }, description: The bundle of expense lines in this claim }
+        comments: { type: array, items: { $ref: '#/components/schemas/ReviewComment' }, description: Review comments on the claim }
+        submittedAt: { type: string, format: date-time, nullable: true, description: When the claim was submitted }
+        returnedAt: { type: string, format: date-time, nullable: true, description: When the claim was last returned }
+        exportedAt: { type: string, format: date-time, nullable: true, description: When the claim was exported to payroll }
+
+    ClaimPage:
+      type: object
+      required: [count, data]
+      properties:
+        count: { type: integer, description: total matching items }
+        next: { type: string, nullable: true, description: relative URI of the next page }
+        previous: { type: string, nullable: true, description: relative URI of the previous page }
+        data: { type: array, items: { $ref: '#/components/schemas/ExpenseClaim' } }
+
+    ClaimCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, description: Short title for the new claim }
+
+    LineCreate:
+      type: object
+      required: [expenseDate, category, amount, description]
+      properties:
+        expenseDate: { type: string, format: date, description: Date the expense was incurred }
+        category: { type: string, description: Finance-maintained category, e.g. travel, meals, supplies, training, other }
+        amount: { type: number, format: double, description: Amount in the payroll currency }
+        description: { type: string, description: What the expense was for }
+
+    LineReplace:
+      type: object
+      required: [expenseDate, category, amount, description]
+      properties:
+        expenseDate: { type: string, format: date, description: Date the expense was incurred }
+        category: { type: string, description: Finance-maintained category, e.g. travel, meals, supplies, training, other }
+        amount: { type: number, format: double, description: Amount in the payroll currency }
+        description: { type: string, description: What the expense was for }
+
+    ReceiptUpload:
+      type: object
+      required: [fileName, contentType, fileSize, content]
+      properties:
+        fileName: { type: string, description: Original file name of the receipt image }
+        contentType: { type: string, description: Content type of the receipt image, e.g. image/jpeg }
+        fileSize: { type: integer, description: Size of the receipt file in bytes }
+        content: { type: string, format: byte, description: Base64-encoded receipt image bytes }
+
+    ReceiptView:
+      type: object
+      required: [receiptId, viewUrl]
+      properties:
+        receiptId: { type: string, description: Identifier of the receipt upload }
+        viewUrl: { type: string, description: Short-lived presigned URL that displays the receipt image }
+
+    ReviewDecision:
+      type: object
+      required: [comment]
+      properties:
+        comment: { type: string, description: The return comment shown to the claimant }
+
+    ReviewApproval:
+      type: object
+      properties: {}
+
+    ExportRecord:
+      type: object
+      required: [exportId, exportedBy, exportedAt, fileFormat, claimCount, totalAmount]
+      properties:
+        exportId: { type: string, description: Identifier of the export run }
+        exportedBy: { type: string, description: Username of the finance reviewer who ran the export }
+        exportedAt: { type: string, format: date-time, description: When the export file was generated }
+        fileFormat: { type: string, description: Format of the exported file, CSV by default }
+        claimCount: { type: integer, description: Number of claims included in the export }
+        totalAmount: { type: number, format: double, description: Sum of the exported claim totals, in the payroll currency }
+
+    ExportPage:
+      type: object
+      required: [count, data]
+      properties:
+        count: { type: integer, description: total matching items }
+        next: { type: string, nullable: true, description: relative URI of the next page }
+        previous: { type: string, nullable: true, description: relative URI of the previous page }
+        data: { type: array, items: { $ref: '#/components/schemas/ExportRecord' } }
+
+security:
+  - oauth2: []
+
+paths:
+  /health:
+    get:
+      tags: [Claims]
+      operationId: checkHealth
+      summary: Service health check
+      security: []
+      responses:
+        '200':
+          description: The service is up.
+
+  /categories:
+    get:
+      tags: [Claims]
+      operationId: listCategories
+      summary: The finance-maintained expense categories
+      security: []
+      responses:
+        '200':
+          description: The category list every expense line is categorized from.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+
+  /me/claims:
+    get:
+      tags: [Claims]
+      operationId: listMyClaims
+      summary: The caller's claims
+      security:
+        - oauth2: [claims:read]
+      parameters:
+        - { name: status, in: query, schema: { type: string }, description: Filter to one claim status }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
+        - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
+      responses:
+        '200':
+          description: The caller's claims, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaimPage' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    post:
+      tags: [Claims]
+      operationId: createMyClaim
+      summary: Create the caller's draft claim
+      security:
+        - oauth2: [claims:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClaimCreate' }
+      responses:
+        '201':
+          description: The draft claim was created and is editable by its owner.
+          headers:
+            Location: { description: URI of the created claim, schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '400': { description: The claim body is invalid., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/claims/{claimId}:
+    get:
+      tags: [Claims]
+      operationId: getMyClaim
+      summary: One of the caller's claims
+      security:
+        - oauth2: [claims:read]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The claim with its lines, receipts and review comments.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's, or not visible to them., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    put:
+      tags: [Claims]
+      operationId: updateMyClaim
+      summary: Update the caller's editable claim title
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClaimCreate' }
+      responses:
+        '200':
+          description: The editable claim was updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '400': { description: The update body is invalid., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's, or not editable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    delete:
+      tags: [Claims]
+      operationId: deleteMyClaim
+      summary: Delete the caller's draft claim
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204':
+          description: The draft claim was deleted.
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's, or not deletable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/claims/{claimId}/submit:
+    post:
+      tags: [Claims]
+      operationId: submitMyClaim
+      summary: Submit the caller's claim to their manager
+      security:
+        - oauth2: [claims:submit]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The claim now stands awaiting the claimant's manager, who is emailed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '400': { description: A line is missing a receipt or the claim has no lines., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's, or not submittable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/claims/{claimId}/lines:
+    post:
+      tags: [Claims]
+      operationId: addMyClaimLine
+      summary: Add an expense line to the caller's editable claim
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LineCreate' }
+      responses:
+        '201':
+          description: The line was added to the editable claim.
+          headers:
+            Location: { description: URI of the created line, schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseLine' }
+        '400': { description: The line body is invalid., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's, or not editable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/claims/{claimId}/lines/{lineId}:
+    put:
+      tags: [Claims]
+      operationId: updateMyClaimLine
+      summary: Update one expense line of the caller's editable claim
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+        - { name: lineId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LineReplace' }
+      responses:
+        '200':
+          description: The line was updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseLine' }
+        '400': { description: The line body is invalid., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such line of the caller's, or not editable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    delete:
+      tags: [Claims]
+      operationId: deleteMyClaimLine
+      summary: Delete one expense line from the caller's editable claim
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+        - { name: lineId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204':
+          description: The line was deleted from the editable claim.
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such line of the caller's, or not editable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/claims/{claimId}/lines/{lineId}/receipt:
+    post:
+      tags: [Claims]
+      operationId: uploadMyClaimLineReceipt
+      summary: Attach a receipt image to one expense line of the caller's editable claim
+      security:
+        - oauth2: [claims:write]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+        - { name: lineId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptUpload' }
+      responses:
+        '201':
+          description: The receipt was stored and is attached to the line.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Receipt' }
+        '400': { description: The upload body is invalid., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such line of the caller's, or not editable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    get:
+      tags: [Claims]
+      operationId: viewMyClaimLineReceipt
+      summary: A short-lived URL that displays the receipt on one of the caller's lines
+      security:
+        - oauth2: [claims:read]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+        - { name: lineId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: A presigned URL that displays the receipt image.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptView' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such receipt of the caller's., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/reports/claims:
+    get:
+      tags: [Claims]
+      operationId: listMyReportsClaims
+      summary: The claims of the caller's direct reports
+      security:
+        - oauth2: [claims:review]
+      parameters:
+        - { name: status, in: query, schema: { type: string }, description: Filter to one claim status }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
+        - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
+      responses:
+        '200':
+          description: Claims filed by the caller's direct reports, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaimPage' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/reports/claims/{claimId}/approve:
+    post:
+      tags: [Review]
+      operationId: approveReportClaim
+      summary: Approve a submitted claim of the caller's direct reports
+      security:
+        - oauth2: [claims:approve]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewApproval' }
+      responses:
+        '200':
+          description: The claim now stands awaiting finance review, and the claimant is emailed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim awaiting the caller., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: The claim is not awaiting the caller's approval., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/reports/claims/{claimId}/return:
+    post:
+      tags: [Review]
+      operationId: returnReportClaim
+      summary: Return a submitted claim of the caller's direct reports with a comment
+      security:
+        - oauth2: [claims:approve]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewDecision' }
+      responses:
+        '200':
+          description: The claim now stands returned to its claimant, who is emailed with the comment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '400': { description: The return body is invalid or the comment is empty., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim awaiting the caller., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: The claim is not awaiting the caller's approval., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims:
+    get:
+      tags: [Review]
+      operationId: listFinanceQueue
+      summary: Every manager-approved claim in the finance queue
+      security:
+        - oauth2: [claims:review-all]
+      parameters:
+        - { name: status, in: query, schema: { type: string }, description: Filter to one claim status, defaults to awaiting-finance }
+        - { name: claimant, in: query, schema: { type: string }, description: Filter to one claimant's username }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
+        - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
+      responses:
+        '200':
+          description: Manager-approved claims awaiting finance review, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaimPage' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/{claimId}:
+    get:
+      tags: [Review]
+      operationId: getQueueClaim
+      summary: Every claim's full review view
+      security:
+        - oauth2: [claims:review-all]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The claim with its lines, receipts and review comments.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/{claimId}/approve:
+    post:
+      tags: [Review]
+      operationId: approveClaimForExport
+      summary: Approve every manager-approved claim for export
+      security:
+        - oauth2: [claims:export]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewApproval' }
+      responses:
+        '200':
+          description: The claim now stands ready for export, and the claimant is emailed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: The claim is not awaiting finance review., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/{claimId}/return:
+    post:
+      tags: [Review]
+      operationId: returnClaimFromFinance
+      summary: Return every manager-approved claim with a comment
+      security:
+        - oauth2: [claims:export]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewDecision' }
+      responses:
+        '200':
+          description: The claim now stands returned to its claimant, who is emailed with the comment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '400': { description: The return body is invalid or the comment is empty., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: The claim is not awaiting finance review., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/receipts/{receiptId}:
+    get:
+      tags: [Review]
+      operationId: viewQueueClaimReceipt
+      summary: A short-lived URL that displays any claim's receipt to a reviewer
+      security:
+        - oauth2: [claims:review-all]
+      parameters:
+        - { name: receiptId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: A presigned URL that displays the receipt image.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptView' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such receipt., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/exports:
+    post:
+      tags: [Export]
+      operationId: createPayrollExport
+      summary: Build the payroll file of every approved, not-yet-exported claim
+      security:
+        - oauth2: [claims:export]
+      responses:
+        '200':
+          description: The export run was recorded and the payroll file is downloadable; every included claim now stands exported.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExportRecord' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+    get:
+      tags: [Export]
+      operationId: listPayrollExports
+      summary: Every past payroll export
+      security:
+        - oauth2: [claims:export]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 }, description: Items per page }
+        - { name: offset, in: query, schema: { type: integer, default: 0 }, description: Zero-based start index }
+      responses:
+        '200':
+          description: Past exports, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExportPage' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /claims/exports/{exportId}:
+    get:
+      tags: [Export]
+      operationId: downloadPayrollExport
+      summary: Download one past export's payroll file
+      security:
+        - oauth2: [claims:export]
+      parameters:
+        - { name: exportId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The export's payroll file; one row per claim with claimant, claim, category totals and amount.
+          content:
+            text/csv:
+              schema: { type: string }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such export., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
