@@ -1,0 +1,54 @@
+{
+  "version": 3,
+  "permissions": [
+    {
+      "resource": "claims",
+      "component": "expense-api",
+      "description": "Expense claims and their expense lines",
+      "actions": [
+        { "handle": "read", "description": "The caller's own claims" },
+        { "handle": "write", "description": "Create and edit the caller's own claims" },
+        { "handle": "submit", "description": "Submit the caller's own claim for approval" },
+        { "handle": "review", "description": "The claims of the caller's direct reports" },
+        { "handle": "approve", "description": "Approve or return a submitted claim awaiting the caller" },
+        { "handle": "review-all", "description": "Every manager-approved claim in the finance queue" },
+        { "handle": "export", "description": "Approve every claim for export, download the payroll file, and see export history" }
+      ]
+    }
+  ],
+  "groups": [
+    { "name": "Employees", "description": "Everyone on staff who files expense claims" },
+    { "name": "Managers", "description": "Staff with direct reports who approve their team's claims" },
+    { "name": "Finance", "description": "The finance team that reviews claims and runs the payroll export" }
+  ],
+  "roles": [
+    {
+      "name": "Employee",
+      "description": "Any staff member: drafts, submits and tracks their own expense claims and corrects returned ones.",
+      "stories": [1, 2, 3, 4, 5],
+      "grants": ["claims:read", "claims:write", "claims:submit"],
+      "assignTo": ["Employees"]
+    },
+    {
+      "name": "Manager",
+      "description": "An employee with direct reports: sees the claims awaiting their approval and approves or returns each one.",
+      "stories": [6, 7, 8],
+      "grants": ["claims:read", "claims:write", "claims:submit", "claims:review", "claims:approve"],
+      "assignTo": ["Managers"]
+    },
+    {
+      "name": "FinanceReviewer",
+      "description": "A finance team member (the PRD actor 'Finance team member'): reviews manager-approved claims, returns faulty ones for correction, approves claims for export and downloads the payroll file.",
+      "stories": [9, 10, 11, 12, 13],
+      "grants": ["claims:read", "claims:write", "claims:submit", "claims:review-all", "claims:export"],
+      "assignTo": ["Finance"]
+    }
+  ],
+  "testUsers": [
+    { "username": "test-employee", "roles": ["Employee"] },
+    { "username": "test-employee-2", "roles": ["Employee"] },
+    { "username": "test-manager", "roles": ["Manager"] },
+    { "username": "test-manager-2", "roles": ["Manager"] },
+    { "username": "test-finance-reviewer", "roles": ["FinanceReviewer"] }
+  ]
+}

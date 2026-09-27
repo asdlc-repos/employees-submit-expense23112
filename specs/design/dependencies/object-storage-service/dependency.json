@@ -1,0 +1,16 @@
+{
+  "name": "object-storage-service",
+  "resource": {
+    "name": "object-storage-service",
+    "description": "Amazon S3 bucket that stores expense receipt images. The claims API uploads each receipt object and returns short-lived presigned URLs so reviewers can view them; only object keys and metadata live in the database.",
+    "provider": "Amazon Web Services S3",
+    "config": [
+      { "key": "AWS_ACCESS_KEY_ID", "secret": true, "description": "Access key id of the IAM user entitled to write to the receipts bucket" },
+      { "key": "AWS_SECRET_ACCESS_KEY", "secret": true, "description": "Secret access key paired with the access key id" },
+      { "key": "AWS_S3_BUCKET_NAME", "description": "Name of the S3 bucket receipts are stored in" },
+      { "key": "AWS_REGION", "defaultValue": "us-east-1", "description": "AWS region the receipts bucket lives in" }
+    ],
+    "contract": { "type": "sdk", "path": "sdk.json" }
+  },
+  "provenance": { "sourceUrl": "https://central.ballerina.io/ballerinax/aws.s3/latest" }
+}
