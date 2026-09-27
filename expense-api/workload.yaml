@@ -1,0 +1,30 @@
+apiVersion: openchoreo.dev/v1alpha1
+metadata:
+  name: expense-api
+
+endpoints:
+  - name: http
+    type: HTTP
+    port: 9090
+    basePath: /
+    visibility:
+      - project
+      - internal
+      - external
+
+dependencies:
+  resources:
+    - ref: employees-submit-5f73e4f1
+      envBindings:
+        dbname: EXPENSE_DB_DBNAME
+        host: EXPENSE_DB_HOST
+        password: EXPENSE_DB_PASSWORD
+        port: EXPENSE_DB_PORT
+        user: EXPENSE_DB_USER
+    - ref: employees-submit-8a8cbd41
+      envBindings:
+        client_id: EXPENSE_AUTH_CLIENT_ID
+        issuer: EXPENSE_AUTH_ISSUER
+        jwks_url: EXPENSE_AUTH_JWKS_URL
+        resource: EXPENSE_AUTH_RESOURCE
+        scopes: EXPENSE_AUTH_SCOPES

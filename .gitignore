@@ -1,0 +1,12 @@
+# crash artefacts — never wanted, in any component
+core
+!core/
+core.[0-9]*
+hs_err_pid*.log
+replay_pid*.log
+
+# build output and dependency directories
+/expense-api/target/
+/expense-api/data/
+/expense-webapp/node_modules/
+/expense-webapp/dist/
