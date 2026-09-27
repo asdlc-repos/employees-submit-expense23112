@@ -1,0 +1,21 @@
+title Expense Claims
+
+component expense-webapp as "Expense Claims" web-application
+component expense-api as "Expense API" service
+component expense-db as "Expense Database" database
+
+east expense-auth as "Thunder Auth" identity-server
+south directory-service as "Company Directory" service
+south email-service as "Email Service" service
+south object-storage-service as "Receipt Storage (Amazon S3)" service
+
+north -> expense-webapp
+north -> expense-api
+
+expense-webapp -> expense-api
+expense-webapp -> expense-auth
+expense-api -> expense-auth
+expense-api -> expense-db
+expense-api -> directory-service
+expense-api -> email-service
+expense-api -> object-storage-service
