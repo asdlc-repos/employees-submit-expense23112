@@ -441,6 +441,42 @@ paths:
               schema: { $ref: '#/components/schemas/ClaimPage' }
         '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /me/reports/claims/{claimId}:
+    get:
+      tags: [Review]
+      operationId: getMyReportClaim
+      summary: One claim of the caller's direct reports
+      security:
+        - oauth2: [claims:review]
+      parameters:
+        - { name: claimId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The report's claim with its lines, receipts and review comments.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpenseClaim' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such claim of the caller's reports, or not visible to them., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /me/reports/receipts/{receiptId}:
+    get:
+      tags: [Review]
+      operationId: viewReportClaimReceipt
+      summary: A short-lived URL that displays a receipt on a report's claim
+      security:
+        - oauth2: [claims:review]
+      parameters:
+        - { name: receiptId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: A presigned URL that displays the receipt image.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptView' }
+        '401': { description: Not signed in., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such receipt on a claim of the caller's reports., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /me/reports/claims/{claimId}/approve:
     post:
       tags: [Review]
