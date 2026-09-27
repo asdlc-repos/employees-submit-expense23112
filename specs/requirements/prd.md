@@ -58,3 +58,4 @@ An internal expense-claims application. An employee signs in with company single
 ## Open Questions
 
 1. What import format does the payroll system require (for example CSV), and does it need a fixed column layout? — answered by finance; the answer shapes the export file at design.
+
